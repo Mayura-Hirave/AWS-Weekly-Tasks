@@ -11,7 +11,7 @@
 					"S3Key": "lambda_function.zip"
 				},
 				"Description": "This Function is called whenever an object lands on s3, to copy the object to another bucket",
-				"Handler": "index.lambda_handler",
+				"Handler": "lambda_function.lambda_handler",
 				"Role": "arn:aws:iam::478055296570:role/S3FullAccess",
 				"Runtime" : "python3.9"
 			}
