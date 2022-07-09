@@ -36,7 +36,7 @@ class s3bucket:
             if compareMetadata(filterMetadata, object.metadata) and compareTags(filterTags,objTags):
                 objectsToDelete.append({'Key':object.key,'VersionId':'null'})
         response=None
-        print(objectsToDelete)
+        #print(objectsToDelete)
         if objectsToDelete:
             response = self.bucket.delete_objects(Delete={'Objects': objectsToDelete, 'Quiet': True})
         return response
