@@ -32,7 +32,6 @@ class s3bucket:
         for objectSummary in self.bucket.objects.all():
             object=self.bucket.Object(objectSummary.key)
             objTags = self.s3Client.get_object_tagging(Bucket=self.bucket.name,Key=object.key)['TagSet']
-            print(object.metadata,objTags)
             if compareMetadata(filterMetadata, object.metadata) and compareTags(filterTags,objTags):
                 objectsToDelete.append({'Key':object.key,'VersionId':'null'})
         response=None
@@ -61,7 +60,6 @@ if __name__ == '__main__':
         objName = "file"+str(i)+"."+fileType[random.randint(0, 3)]
         metadata = {"metadata1": metadata1[random.randint(0, 2)],"metadata2":metdata2[random.randint(0, 2)]}
         tags ='tag1'+'='+tag1[random.randint(0, 2)]+'&'+'tag2'+'='+tag2[random.randint(0, 2)]
-        print(tags)
         myBucket.uploadObj(objName,metadata,fileContent,tags)
 
     
