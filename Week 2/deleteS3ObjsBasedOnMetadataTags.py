@@ -47,8 +47,8 @@ class s3bucket:
 
 if __name__ == '__main__':
     # For creating dummy s3 objects
-    metdata1 = ['meta1Val1', 'meta1Val2', 'meta1Val3']
-    metdata2 = ['meta2Val1', 'meta2Val2', 'meta2Val3']
+    metadata1 = ['meta1Val1', 'meta1Val2', 'meta1Val3']
+    metadata2 = ['meta2Val1', 'meta2Val2', 'meta2Val3']
     tag1 = ['tag1Val1', 'tag1Val2', 'tag1Val3']
     tag2 = ['tag2Val1', 'tag2Val2','tag2Val3']
     fileType = ['txt', 'pdf', 'docx','csv']
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     # adding 15 objects into `my-new-s3bucket` bucket
     for i in range(15):
         objName = "file"+str(i)+"."+fileType[random.randint(0, 3)]
-        metadata = {"metadata1": metdata1[random.randint(0, 2)],"metdata2":metdata2[random.randint(0, 2)]}
+        metadata = {"metadata1": metadata1[random.randint(0, 2)],"metadata2":metdata2[random.randint(0, 2)]}
         tags ='tag1'+'='+tag1[random.randint(0, 2)]+'&'+'tag2'+'='+tag2[random.randint(0, 2)]
         print(tags)
         myBucket.uploadObj(objName,metadata,fileContent,tags)
