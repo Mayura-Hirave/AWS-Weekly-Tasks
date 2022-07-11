@@ -1,0 +1,128 @@
+-------------------------Dummy input data for creating 15 objects------------------------------------
+15
+file0.txt
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val1
+metadata2:meta2Val3
+2
+tag1:tag1Val2
+tag2:tag2Val3
+file1.txt
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val2
+metadata2:meta2Val2
+2
+tag1:tag1Val1
+tag2:tag2Val1
+file2.txt
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val1
+metadata2:meta2Val1
+2
+tag1:tag1Val2
+tag2:tag2Val2
+file3.txt
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val2
+metadata2:meta2Val1
+2
+tag1:tag1Val1
+tag2:tag2Val3
+file4.pdf
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val3
+metadata2:meta2Val3
+2
+tag1:tag1Val2
+tag2:tag2Val3
+file5.pdf
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val3
+metadata2:meta2Val2
+2
+tag1:tag1Val2
+tag2:tag2Val3
+file6.pdf
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val1
+metadata2:meta2Val3
+2
+tag1:tag1Val3
+tag2:tag2Val3
+file7.pdf
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val2
+metadata2:meta2Val1
+2
+tag1:tag1Val2
+tag2:tag2Val3
+file8.docx
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val3
+metadata2:meta2Val2
+2
+tag1:tag1Val2
+tag2:tag2Val1
+file9.txt
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val1
+metadata2:meta2Val3
+2
+tag1:tag1Val3
+tag2:tag2Val2
+file10.csv
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val1
+metadata2:meta2Val1
+2
+tag1:tag1Val1
+tag2:tag2Val2
+file11.csv
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val3
+metadata2:meta2Val3
+2
+tag1:tag1Val2
+tag2:tag2Val3
+file12.txt
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val1
+metadata2:meta2Val1
+2
+tag1:tag1Val1
+tag2:tag2Val1
+file13.pdf
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val3
+metadata2:meta2Val1
+2
+tag1:tag1Val1
+tag2:tag2Val2
+file14.csv
+AWS Dummy data, AWS Dummy data, AWS Dummy data
+2
+metadata1:meta1Val1
+metadata2:meta2Val1
+2
+tag1:tag1Val3
+tag2:tag2Val1
+
+----------------------------Dummy input data to delete object based on metadata & tags----------------------------------
+1
+metadata1:meta1Val1
+1
+tag1:tag1Val3
