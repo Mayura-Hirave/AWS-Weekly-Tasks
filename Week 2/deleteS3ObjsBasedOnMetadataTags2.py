@@ -3,14 +3,14 @@ import boto3
 import random
 from aws_access_key import aws_access_key_ID,aws_secret_access_KEY
 
-class Utility:
-    @staticmethod
-    class CustomError(Exception):
-        def __init__(self, description):
-            self.description=description
-        def __str__(self):  # overriding print()
-            return self.description
+
+class CustomError(Exception):
+    def __init__(self, description):
+        self.description=description
+    def __str__(self):  # overriding print()
+        return self.description
         
+class Utility:
     @staticmethod
     def compareMetadata(dict1, dict2):
         for key,val in dict1.items():
