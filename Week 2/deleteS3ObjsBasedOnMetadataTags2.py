@@ -114,7 +114,10 @@ if __name__ == '__main__':
                     noOfObjs=int(noOfObjs)
                     for i in range(noOfObjs):
                         objName = input("Enter Key of the object: ")
-                        fileContent = input("Enter content of the file: ")
+                        fileContent = ""
+                        path=input("Enter path of input file=> ")  #like    C:\Users\Mayura\Downloads\dummy data.txt
+                        with open(path, 'rb') as fileObj:
+                            fileContent=fileObj.read()
                         metadataCount = int(input("Count of metadata: "))
                         metadata = Utility.takeDictInput(metadataCount)
                         tagsCount = int(input("Number of Tags: "))
