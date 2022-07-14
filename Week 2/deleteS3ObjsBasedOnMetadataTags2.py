@@ -3,43 +3,50 @@ import boto3
 import random
 from aws_access_key import aws_access_key_ID,aws_secret_access_KEY
 
-class CustomError(Exception):
-    def __init__(self, description):
-        self.description=description
-    def __str__(self):  # overriding print()
-        return self.description
+class Utility:
+    @staticmethod
+    class CustomError(Exception):
+        def __init__(self, description):
+            self.description=description
+        def __str__(self):  # overriding print()
+            return self.description
+        
+    @staticmethod
+    def compareMetadata(dict1, dict2):
+        for key,val in dict1.items():
+            if key not in dict2 or dict2[key]!=val:
+                return False
+        return True
 
-def compareMetadata(dict1, dict2):
-    for key,val in dict1.items():
-        if key not in dict2 or dict2[key]!=val:
-            return False
-    return True
+    # list1 = [{'Key': 'tag1', 'Value': 'tag1Val1'}, {'Key': 'tag2', 'Value': 'tag2Val1'}]
+    @staticmethod
+    def compareTags( list1, list2):
+        for dict1 in list1:
+            if dict1 not in list2:
+                return False
+        return True
 
-# list1 = [{'Key': 'tag1', 'Value': 'tag1Val1'}, {'Key': 'tag2', 'Value': 'tag2Val1'}]
-def compareTags( list1, list2):
-    for dict1 in list1:
-        if dict1 not in list2:
-            return False
-    return True
+    @staticmethod
+    def convertDictToString(tags):
+        return "&".join([k + "=" + v for k, v in tags.items()])
 
-def convertDictToString(tags):
-    return "&".join([k + "=" + v for k, v in tags.items()])
+    @staticmethod
+    def takeDictInput(itemsCount):
+        dict1=dict()
+        for i in range(itemsCount):
+            key_val = input("Enter in format => Key:Value  -> ").split(":")
+            dict1[key_val[0]] = key_val[1]
+        return dict1
 
-def takeDictInput(itemsCount):
-    dict1=dict()
-    for i in range(itemsCount):
-        key_val = input("Enter in format => Key:Value  -> ").split(":")
-        dict1[key_val[0]] = key_val[1]
-    return dict1
-
-def convertDictToTagset(dict1):
-    list1=[]
-    for key,val in dict1.items():
-        dict2=dict()
-        dict2['Key']=key
-        dict2['Value']=val
-        list1.append(dict2)
-    return list1
+    @staticmethod
+    def convertDictToTagset(dict1):
+        list1=[]
+        for key,val in dict1.items():
+            dict2=dict()
+            dict2['Key']=key
+            dict2['Value']=val
+            list1.append(dict2)
+        return list1
 
 class s3bucket:
     session = boto3.Session(aws_access_key_id=aws_access_key_ID, aws_secret_access_key=aws_secret_access_KEY,
@@ -73,7 +80,7 @@ class s3bucket:
                 object=self.bucket.Object(objectSummary.key)
                 objTags = s3bucket.s3Client.get_object_tagging(Bucket=self.bucket.name,Key=object.key)['TagSet']
                 #print(object.metadata,objTags)
-                if compareMetadata(filterMetadata, object.metadata) and compareTags(filterTags,objTags):
+                if Utility.compareMetadata(filterMetadata, object.metadata) and Utility.compareTags(filterTags,objTags):
                     objectsToDelete.append({'Key':object.key,'VersionId':'null'})
             response=None
             #print(objectsToDelete) -deleting these matched objects
@@ -109,18 +116,18 @@ if __name__ == '__main__':
                         objName = input("Enter Key of the object: ")
                         fileContent = input("Enter content of the file: ")
                         metadataCount = int(input("Count of metadata: "))
-                        metadata = takeDictInput(metadataCount)
+                        metadata = Utility.takeDictInput(metadataCount)
                         tagsCount = int(input("Number of Tags: "))
-                        tags = takeDictInput(tagsCount)
-                        myBucket.uploadObj(objName,metadata,fileContent,convertDictToString(tags))
+                        tags = Utility.takeDictInput(tagsCount)
+                        myBucket.uploadObj(objName,metadata,fileContent,Utility.convertDictToString(tags))
                     print("Successfully uploaded",noOfObjs,"objects")
                 elif option=='2':
                     myBucket.showObjects()
                 elif option=='3':
                     metadataCount = int(input("Count of metadata: "))
-                    metadata = takeDictInput(metadataCount)
+                    metadata = Utility.takeDictInput(metadataCount)
                     tagsCount = int(input("Number of Tags: "))
-                    tagsSet= convertDictToTagset(takeDictInput(tagsCount))
+                    tagsSet= Utility.convertDictToTagset(Utility.takeDictInput(tagsCount))
                     response = myBucket.DeleteObjsBasedOnMetadataTags(metadata, tagsSet)
                     if response and response['ResponseMetadata']['HTTPStatusCode'] != 200:
                         print("Encountered Error!")
