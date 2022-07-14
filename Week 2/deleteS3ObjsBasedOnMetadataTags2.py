@@ -1,6 +1,4 @@
 import boto3
-#import botocore
-import random
 from aws_access_key import aws_access_key_ID,aws_secret_access_KEY
 
 
