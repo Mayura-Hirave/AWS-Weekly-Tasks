@@ -1,14 +1,27 @@
 {
 	"AWSTemplateFormatVersion": "2010-09-09",
 	"Description": "A template for event based trigger on S3 using Lmabda",
-	"Parameters": {
-        "S3BucketName": {
-            "Type": "String",
-            "Default": "primary-s3bucket1"
-        }
-    },
 	"Resources": {
-		"copyTrigger": {
+		"CreateS3FullAccessRole":{
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument" : {
+						"Version": "2012-10-17",
+						"Statement": [
+							{
+								"Effect": "Allow",
+								"Principal": { "Service": [ "lambda.amazonaws.com" ] },
+								"Action": [ "sts:AssumeRole" ]
+							}
+						]
+				},
+				"Description" :"The IAM Role which has full access to s3 buckets" ,
+				"RoleName" : "S3FullAccessRole",
+				"ManagedPolicyArns" : [ "arn:aws:iam::aws:policy/AmazonS3FullAccess" ]
+			}
+		},
+		
+		"CreateLambdaFunction": {
 			"Type": "AWS::Lambda::Function",
 			"Properties": {
 				"FunctionName": "s3trigger-lambda-function",
@@ -18,25 +31,22 @@
 				},
 				"Description": "This Function is called whenever an object lands on s3, to copy the object to another bucket",
 				"Handler": "lambda_function2.lambda_handler",
-				"Role": "arn:aws:iam::478055296570:role/S3FullAccess",
+				"Role": { "Fn::GetAtt": [ "CreateS3FullAccessRole", "Arn"]},
 				"Runtime" : "python3.9"
 			}
 		},
 		
 		"primaryS3bucket": {
 			"Type": "AWS::S3::Bucket",
-			"DependsOn": [ "copyTrigger" ],
+			"DependsOn": [ "CreateLambdaFunction" ],
 			"Properties": {
 				"AccessControl" : "Private",
 				"BucketName" : "primary-s3bucket1",
 				"NotificationConfiguration" : {
-					"EventBridgeConfiguration": {
-						"EventBridgeEnabled": true
-					},
 					"LambdaConfigurations" : [ 
 						{
 							"Event" : "s3:ObjectCreated:*",
-							"Function" : { "Fn::GetAtt": [ "copyTrigger", "Arn"] }
+							"Function" : { "Fn::GetAtt": [ "CreateLambdaFunction", "Arn"] }
 						}
 					]
 				}
@@ -54,17 +64,17 @@
 		
 		"AllowS3ToCallLambdaPermission": {
 			"Type": "AWS::Lambda::Permission",
-			"DependsOn": [ "copyTrigger" ],
+			"DependsOn": [ "CreateLambdaFunction" ],
 			"Properties": {
 				"Action": "lambda:InvokeFunction",  
-				"FunctionName": { "Fn::GetAtt": [ "copyTrigger", "Arn"] },
-				"Principal": "s3.amazonaws.com",
-				"SourceArn":  { "Fn::Sub": "arn:aws:s3:::${S3BucketName}" }
+				"FunctionName": { "Fn::GetAtt": [ "CreateLambdaFunction", "Arn"] },
+				"Principal": "s3.amazonaws.com", 
+				"SourceArn":  
+				{ "Fn::Sub" : [ "arn:aws:s3:::${primaryS3bucketName}", { "primaryS3bucketName":"primary-s3bucket1" } ] }
 			}
 	    }
 	}
 }
-
 
 
 
