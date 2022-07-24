@@ -1,15 +1,14 @@
 import boto3
+import urllib.parse
 
 def lambda_handler(event, context):
 	srcBucketName = event['Records'][0]['s3']['bucket']['name']
-	srcBucketObjKey = event['Records'][0]['s3']['object']['key']
+	srcBucketObjKey = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
 	
 	destinationBucket = 'backup-s3buckett1'
 	copy_source = {'Bucket': srcBucketName, 'Key': srcBucketObjKey }
 	try:
 		s3 = boto3.client('s3')
 		s3.copy_object(Bucket=destinationBucket, Key=srcBucketObjKey, CopySource=copy_source)
-		return True
 	except Exception as err:
 		print ("Error -"+str(err))
-	return False
