@@ -17,6 +17,7 @@ df = pd.read_csv(streaming_body)
 buffer = BytesIO() #_io.BytesIO object
 df.to_parquet(buffer, index=False)
 output_file_name = args['FileNameWithoutFiletype'] + '/' + 'data.parquet'
+buffer.seek(0)
 s3.Object(args['OutputBucket'], output_file_name).put(Body=buffer.read())
 
 
