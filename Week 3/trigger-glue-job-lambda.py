@@ -43,8 +43,8 @@ class S3Object:
 
 
 def lambda_handler(event, context):
-    s3event = json.loads(event['Records'][0]['Sns']['Message'])
-    obj = S3Object(s3event)
+    s3event = event['Records'][0]['Sns']['Message'].replace("'",'"')
+    obj = S3Object(json.loads(s3event))
 
     try:
         if obj.type not in S3Object.gluejob.keys():
