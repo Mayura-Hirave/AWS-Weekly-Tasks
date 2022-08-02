@@ -1,0 +1,105 @@
+<html>
+	<head>
+		<title>Home Page</title>
+	</head>
+	<style>
+		body {font-family: Arial, Helvetica, sans-serif; }
+		* {box-sizing: border-box}
+
+		/* setting width of input & select fields */
+		input, select {
+		  width: 100%;
+		  padding: 15px;
+		  margin: 5px 0 22px 0;
+		  display: inline-block;
+		  border: none;
+		  background: #f1f1f1;
+		  background-color: #ddd;
+		  outline: none;
+		}
+
+		hr {
+		  border: 1px solid #f1f1f1;
+		  margin-bottom: 25px;
+		}
+
+		/* Set a style for all buttons */
+		button {
+		  background-color: #04AA6D;
+		  color: white;
+		  padding: 14px 20px;
+		  margin: 8px 0;
+		  border: none;
+		  cursor: pointer;
+		  width: 100%;
+		  opacity: 0.9;
+		}
+
+		button:hover {
+		  opacity:1;
+		}
+
+		.container1 {
+		  padding: 16px;
+		  width: 30%;
+		  margin: auto;
+		  border:1px solid #ccc;
+		  text-align: center;
+		}
+		.container2 {
+		  padding: 16px;
+		  width: 100%;
+		  border:1px solid #ccc;
+		  margin: auto;
+		  text-align: left;
+		}
+	
+	</style>
+	<body >
+	  <div class="container1">
+		  <h1>Welcome to ABC Bank</h1>
+		  <p>Provide below details to get the transaction count: </p>
+		  <hr>
+		  <div class="container2" >
+			  <form action="https://msw4l9ez4j.execute-api.ap-south-1.amazonaws.com/default/GetTransactionCount" method="POST">
+				  <label for="cid"><b>Customer ID:</b></label>
+				  <input type="text" id="cid" name="customer_id" placeholder="Enter Customer ID" required >
+				  
+				  <label for="key"><b>Password:</b></label>
+				  <input type="password" id="key" name="password" placeholder="Enter Password" required >
+
+				  <label for="month"><b>Month:</b></label>
+				  <select id="month" name="month">
+					<option selected value="1">January</option>
+					<option value="2">February</option>
+					<option value="3">March</option>
+					<option value="4">April</option>
+					<option value="5">May</option>
+					<option value="6">June</option>
+					<option value="7">July</option>
+					<option value="8">August</option>
+					<option value="9">September</option>
+					<option value="10">October</option>
+					<option value="11">November</option>
+					<option value="12">December</option>
+				   </select>
+				  
+				  <label for="year"><b>Year:</b></label>
+				  <select id="year" name="year">
+					<option value="2020">2020</option>
+					<option value="2021">2021</option>
+					<option selected value="2022">2022</option>
+				   </select>
+				  
+				  <input type="hidden" name="is_valid_req" value="True" >
+				  <button type="submit" >Submit</button>
+			  </form>
+		  </div>
+	  </div>
+	</body>
+</html>
+
+
+
+
+
