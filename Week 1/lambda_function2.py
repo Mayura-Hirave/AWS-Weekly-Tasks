@@ -2,7 +2,7 @@ import boto3
 import urllib.parse
 
 def lambda_handler(event, context):
-	srcBucketName = event['Records'][0]['s3']['bucket']['name']
+	srcBucketName = urllib.parse.unquote(event['Records'][0]['s3']['bucket']['name'])
 	srcBucketObjKey = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
 	
 	destinationBucket = 'backup-s3buckett1'
