@@ -11,7 +11,7 @@ class S3Object:
     gluejob = {'csv': 'GlueJobForCSVFiles'}  # mapping file_format with glue_job_name
 
     def __init__(self, event):
-        self.bucket_name = event['Records'][0]['s3']['bucket']['name']
+        self.bucket_name = urllib.parse.unquote(event['Records'][0]['s3']['bucket']['name'])
         self.key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
         self.size = event['Records'][0]['s3']['object']["size"]
         self.filename_without_filetype, self.type = self.key.split('.')
