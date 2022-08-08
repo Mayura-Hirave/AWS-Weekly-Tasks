@@ -3,6 +3,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: A template for event based trigger on S3 using Lmabda
 
 Resources:
+
   CreateS3FullAccessRole:
     Type: AWS::IAM::Role
     Properties:     
@@ -19,13 +20,14 @@ Resources:
       RoleName : S3FullAccessRole
       ManagedPolicyArns: 
       - arn:aws:iam::aws:policy/AmazonS3FullAccess
-    
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+ 
   CreateLambdaFunction:
     Type: AWS::Lambda::Function
     Properties: 
       FunctionName: s3trigger-lambda-function
       Code:
-        S3Bucket: copy-trigger-lambda-func-bucket
+        S3Bucket: all-python-scripts
         S3Key: lambda_function2.zip
       Description: This Function is called whenever an object lands on s3, to copy the object to another bucket
       Handler: lambda_function2.lambda_handler
@@ -34,10 +36,7 @@ Resources:
       
   primaryS3bucket:
     Type: AWS::S3::Bucket
-    DependsOn: 
-    - CreateLambdaFunction
     Properties:
-      AccessControl: Private
       BucketName: primary-s3bucket1
       NotificationConfiguration:
         LambdaConfigurations: 
@@ -47,13 +46,10 @@ Resources:
   backupS3bucket:
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: Private
       BucketName: backup-s3buckett1
       
   AllowS3ToCallLambdaPermission:
     Type: AWS::Lambda::Permission
-    DependsOn: 
-    - CreateLambdaFunction
     Properties:
       Action: lambda:InvokeFunction  
       FunctionName: !GetAtt CreateLambdaFunction.Arn
