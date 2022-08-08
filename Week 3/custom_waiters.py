@@ -25,7 +25,7 @@ class Waiter:
         while True:
             crawler = Client.get_crawler(Name=CrawlerName)['Crawler']
             if crawler['State'] == 'READY':
-                return crawler['LastCrawl']
+                return crawler['LastCrawl']  # if 'LastCrawl' in crawler else True
             num_attempts += 1
             if num_attempts == max_attempts:
                 raise Exception("Max attempts exceeded. Current State: " + crawler['State'])
