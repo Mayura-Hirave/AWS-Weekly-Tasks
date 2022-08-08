@@ -48,14 +48,14 @@ class Utility:
 
 class s3bucket:
     session = boto3.Session(aws_access_key_id=aws_access_key_ID, aws_secret_access_key=aws_secret_access_KEY,
-                            region_name="us-west-1")
+                            region_name="ap-south-1")
     s3 = session.resource("s3")
     s3Client = session.client("s3")  # created only for accessing object's tags - get_object_tagging()
     def __init__(self,bucketName):
         try:
             self.bucket = s3bucket.s3.Bucket(bucketName)
             if bucketName not in [bucket.name for bucket in s3bucket.s3.buckets.all()]: # checking if bucket already exists
-                self.bucket.create(CreateBucketConfiguration={'LocationConstraint': 'us-west-1' })
+                self.bucket.create(CreateBucketConfiguration={'LocationConstraint': 'ap-south-1' })
         except Exception as e:
             raise CustomError("Error in s3bucket.__init__(): "+str(e))
     def showObjects(self):
