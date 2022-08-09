@@ -2,6 +2,27 @@
 	<head>
 		<title>Home Page</title>
 	</head>
+	<script>
+		function validateForm()
+		{
+
+			let id = document.forms["login"]["customer_id"].value;
+			for( const chr of id)
+			{
+				if(isNaN(chr))
+				{
+					alert("Customer ID should be numeric.");
+					return false;
+				}
+			}
+			if( Number(id) < 1000 )
+			{
+				alert("Invalid Customer ID");
+				return false;
+			}
+			return true;
+		}
+	</script>
 	<style>
 		body {font-family: Arial, Helvetica, sans-serif; }
 		* {box-sizing: border-box}
@@ -53,7 +74,6 @@
 		  margin: auto;
 		  text-align: left;
 		}
-	
 	</style>
 	<body >
 	  <div class="container1">
@@ -61,7 +81,7 @@
 		  <p>Provide below details to get the transaction count: </p>
 		  <hr>
 		  <div class="container2" >
-			  <form action="https://2m41ouauu3.execute-api.ap-south-1.amazonaws.com/default/GetTransactionCount" method="POST">
+			  <form name="login" onsubmit="return validateForm()" action="https://2m41ouauu3.execute-api.ap-south-1.amazonaws.com/default/GetTransactionCount" method="POST">
 				  <label for="cid"><b>Customer ID:</b></label>
 				  <input type="text" id="cid" name="customer_id" placeholder="Enter Customer ID" required >
 				  
