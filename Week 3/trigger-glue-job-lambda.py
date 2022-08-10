@@ -1,6 +1,8 @@
 import boto3
 import urllib.parse
 from custom_waiters import Waiter
+
+
 # import json
 # json.dump(): json_object to string, json.loads(): string to json_object
 
@@ -70,7 +72,9 @@ class Table:
 
 class S3Object:
     output_bucket = 'output-data-s3bucket'
-    gluejob = {'csv': 'GlueJobForCSVFiles'}  # mapping file_format with glue_job_name
+    # gluejob = {'csv': 'GlueJobForCSVFiles'}  # mapping file_format with glue_job_name
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('FileSpecification_To_Gluejob_Mapping')
 
     def __init__(self, event):
         try:
@@ -81,16 +85,26 @@ class S3Object:
         except Exception as e:
             raise Exception("Error in S3Object.__init__():\n" + str(e))
 
-    def run_glue_job(self, glue):
+    def get_glue_job(self):
+        query_result = S3Object.table.query(Select="SPECIFIC_ATTRIBUTES", AttributesToGet=["Gluejob_Name"], Limit=1,
+                                            KeyConditions={
+                                                'Media_Type': {'AttributeValueList': [self.type],
+                                                               'ComparisonOperator': 'EQ'},
+                                                'File_Size_Limit': {'AttributeValueList': [self.size],
+                                                                    'ComparisonOperator': 'GE'}
+                                            })
+        return query_result
+
+    def run_glue_job(self, glue, job_name):
         try:
-            if S3Object.gluejob[self.type] not in glue.list_jobs()['JobNames']:
-                print(S3Object.gluejob[self.type], " - This GlueJob doesn't exist")
+            if job_name not in glue.list_jobs()['JobNames']:
+                print(job_name, " - This GlueJob doesn't exist")
                 return {'JobRunState': 'Failed'}
 
             args = {'--InputBucket': self.bucket_name, '--FileNameWithoutFiletype': self.filename_without_filetype,
                     '--OutputBucket': S3Object.output_bucket}
-            job_run_id = glue.start_job_run(JobName=S3Object.gluejob[self.type], Arguments=args)['JobRunId']
-            job_run_details = Waiter.job_run_completed(Client=glue, JobName=S3Object.gluejob[self.type],
+            job_run_id = glue.start_job_run(JobName=job_name, Arguments=args)['JobRunId']
+            job_run_details = Waiter.job_run_completed(Client=glue, JobName=job_name,
                                                        RunId=job_run_id)
             return job_run_details
         except Exception as e:
@@ -109,11 +123,11 @@ class S3Object:
             print("Error in S3Object.glue_job_success():\n", e)
         return False
 
-    def send_failure_alert(self, error_details):
+    def send_failure_alert(self, error_details, job_name):
         try:
             sns = boto3.client('sns')
             topic_arn = 'arn:aws:sns:ap-south-1:478055296570:GlueJobFailureEmailNotification'
-            print("GlueJob ", S3Object.gluejob[self.type], " Failed!")
+            print("GlueJob ", job_name, " Failed!")
             print("Error: ", error_details)
             message = "Failed to convert " + self.key + " into parque file."
             sns.publish(TopicArn=topic_arn, Message=message, Subject='File conversion failed')
@@ -127,15 +141,16 @@ def lambda_handler(event, context):
     try:
         obj = S3Object(event)
 
-        if obj.type not in S3Object.gluejob.keys():
+        query_result = obj.get_glue_job()
+        if query_result['Count'] == 0:
             print("File format not supported.")
             return
 
-        response = obj.run_glue_job(glue=boto3.client('glue'))
-        if response['JobRunState'] == 'SUCCEEDED':
+        glue_response = obj.run_glue_job(glue=boto3.client('glue'), job_name=query_result['Items'][0]['Gluejob_Name'])
+        if glue_response['JobRunState'] == 'SUCCEEDED':
             response = obj.glue_job_success()
         else:
-            response = obj.send_failure_alert(response['ErrorMessage'])
+            response = obj.send_failure_alert(glue_response['ErrorMessage'], job_name=query_result['Items'][0]['Gluejob_Name'])
 
         if response:
             print("Successfully completed task!")
