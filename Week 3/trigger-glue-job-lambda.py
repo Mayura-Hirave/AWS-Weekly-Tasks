@@ -1,8 +1,6 @@
 import boto3
 import urllib.parse
 from custom_waiters import Waiter
-
-
 # import json
 # json.dump(): json_object to string, json.loads(): string to json_object
 
@@ -86,7 +84,7 @@ class S3Object:
             raise Exception("Error in S3Object.__init__():\n" + str(e))
 
     def get_glue_job(self):
-        query_result = S3Object.table.query(Select="SPECIFIC_ATTRIBUTES", AttributesToGet=["Gluejob_Name"], Limit=1,
+        query_result = S3Object.table.query(Select="SPECIFIC_ATTRIBUTES", AttributesToGet=["Gluejob_Name"], Limit=1, ConsistentRead=True,
                                             KeyConditions={
                                                 'Media_Type': {'AttributeValueList': [self.type],
                                                                'ComparisonOperator': 'EQ'},
