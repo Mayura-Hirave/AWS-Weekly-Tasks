@@ -1,0 +1,190 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description:  A template to create rds instance, secret manager and UI to access database through API & lambda function .
+
+Parameters:
+  MyVpcID:
+    Type : String
+    Description: VPC in which RDS Instance will stay.
+  MasterUserName:
+    Type : String
+  MasterUserPassword:
+    Type : String
+  LambdaFuncName:
+    Type: String
+    Default: GetTransactionCount
+  APIStageName: 
+    Type: String
+    Default: v1
+  HTTPMethod:
+    Type: String
+    Default: POST
+
+Resources:
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Allows assigned instance to be accessed through public internet.
+      GroupName: sg_for_rds
+      SecurityGroupIngress: 
+        - CidrIp: 0.0.0.0/0
+          FromPort: 3306
+          ToPort: 3306
+          IpProtocol: tcp
+      SecurityGroupEgress: 
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+      VpcId: !Ref MyVpcID
+
+  MySqlDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties: 
+      AllocatedStorage: 20
+      AvailabilityZone: ap-south-1a
+      DBInstanceClass: db.t3.micro
+      DBInstanceIdentifier: mysql-db-instance
+      VPCSecurityGroups: 
+        - !Ref RDSSecurityGroup
+      Engine: mysql
+      MasterUsername: !Ref MasterUserName
+      MasterUserPassword: !Ref MasterUserPassword
+      PubliclyAccessible: true
+      SourceRegion: ap-south-1
+
+  DBCredentialsManager:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: Stores Credentials of the Master User
+      Name: masteruser_credentials
+      SecretString: !Sub 
+        - '{"username":"${MasterUsername}","password":"${SecretPassword}"}'
+        - MasterUsername: !Ref MasterUserName
+          SecretPassword: !Ref MasterUserPassword
+
+  RoleForLambdaFunction:  
+    Type: AWS::IAM::Role
+    Properties:     
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 
+            - lambda.amazonaws.com
+          Action: 
+          - sts:AssumeRole
+      Description : The IAM Role which allows Lambda Function to access rds & secret manager.
+      RoleName : RoleToAccessSecretManagerRDS
+      ManagedPolicyArns: 
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+      - arn:aws:iam::aws:policy/AmazonRDSReadOnlyAccess
+
+  CreateDatabaseTablesLambda:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: CreateDatabaseTables
+      Code:
+        S3Bucket: all-python-scripts
+        S3Key: week4/create_table.zip
+      Description: This Function creates database, tables & inserts dummy data.
+      Handler: create_table.lambda_handler
+      Role: !GetAtt RoleForLambdaFunction.Arn
+      Runtime: python3.9
+      Timeout: 100
+
+  GetTransactionCountLambda:
+    Type: AWS::Lambda::Function
+    Properties: 
+      FunctionName: !Ref LambdaFuncName
+      Code:
+        S3Bucket: all-python-scripts
+        S3Key: week4/get_transacton_details.zip
+      Description: This Function verifies user & returns transaction count from database
+      Handler: get_transacton_details.lambda_handler
+      Role: !GetAtt RoleForLambdaFunction.Arn
+      Runtime: python3.9
+      Timeout: 100
+  
+  APIGatewayRestAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties: 
+      Description: API to get transaction count
+      EndpointConfiguration: 
+        Types: 
+          - REGIONAL
+      Name: BankDB-API
+
+  APIGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    DependsOn:
+      - APIGatewayRestAPI
+    Properties:
+      RestApiId: !Ref APIGatewayRestAPI
+      ParentId: !GetAtt APIGatewayRestAPI.RootResourceId
+      PathPart: !Ref LambdaFuncName
+
+  APIGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn:
+      - APIGatewayResource
+    Properties:
+      RestApiId: !Ref APIGatewayRestAPI
+      ResourceId: !Ref APIGatewayResource
+      HttpMethod: !Ref HTTPMethod
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: !Ref HTTPMethod 
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFuncNameArn}/invocations'
+          - LambdaFuncNameArn: !GetAtt GetTransactionCountLambda.Arn
+
+  APIDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - APIGatewayMethod
+    Properties:
+      Description: API to get transaction count
+      RestApiId: !Ref APIGatewayRestAPI
+      StageName: !Ref APIStageName
+      
+  AllowAPIToInvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - APIDeployment
+    Properties:
+      Action: lambda:InvokeFunction  
+      FunctionName: !Ref GetTransactionCountLambda
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 
+        - 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${APIStageName}/${HTTPMethod}/${ResourcePath}'
+        - ApiId: !Ref APIGatewayRestAPI
+          ResourcePath: !Ref LambdaFuncName
+          
+  BucketToHostWebsite:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: abc-bank
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref BucketToHostWebsite
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref BucketToHostWebsite
+                - /*
+            Principal: '*'
