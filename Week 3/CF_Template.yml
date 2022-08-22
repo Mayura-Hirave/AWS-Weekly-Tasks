@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template to create resources for 3rd Task.
+Parameters:
+  inputBucketName:
+    Type: String
+    Default: input-data-s3bucket
+    Description: Bucket/data-store for all the inputs file
+    
+Resources:
+  RoleForLambdaFunctions:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Description: The IAM Role which allows Lambda Function to read from dynamodb, run Athena queries, run Glue Job and Crawler, publish failure alert to sns topic.
+      RoleName: RoleToInvokeLambdaGlueRunAthenaFullSNS
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole'
+        - 'arn:aws:iam::aws:policy/AmazonSNSFullAccess'
+
+  PolicyForAthenaQueryRunAccess:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'athena:StartQueryExecution'
+              - 'athena:StopQueryExecution'
+              - 'athena:GetQueryExecution'
+            Resource: '*'
+      PolicyName: CustomAthenaQueryRunAccessPolicy
+      Roles: 
+        - !Ref RoleForLambdaFunctions
+    
+  LambdaFunctionToTriggerGlueJob:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: LambdaFuncToTriggerGlueJob
+      Code:
+        S3Bucket: all-python-scripts
+        S3Key: week3/trigger-glue-job-lambda.zip
+      Description: This Function is called whenever an object lands on s3, to run glue job based on file type & size.
+      Handler: trigger-glue-job-lambda.lambda_handler
+      Role: !GetAtt RoleForLambdaFunctions.Arn
+      Runtime: python3.9
+      Timeout: 300
+      
+  asyncconfig:
+    Type: 'AWS::Lambda::EventInvokeConfig'
+    Properties:
+      FunctionName: !Ref LambdaFunctionToTriggerGlueJob
+      MaximumRetryAttempts: 0
+      Qualifier: $LATEST
+      
+  inputS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref inputBucketName
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Function: !GetAtt LambdaFunctionToTriggerGlueJob.Arn
+            
+  AllowS3ToCallLambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt LambdaFunctionToTriggerGlueJob.Arn
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub 
+        - 'arn:aws:s3:::${inputS3BucketName}'
+        - inputS3BucketName: !Ref inputBucketName
+        
+  RoleForGlueJobCrawler:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - glue.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Description: The IAM Role which has all permissions needed to run glue crawler & glue job
+      RoleName: AWSGlueServiceRole-RoleToRunGlueJobCrawlerFullS3
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole'
+        - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+        
+  outputS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: output-data-s3bucket
+      
+  GlueJobToProcessCSV:
+    Type: 'AWS::Glue::Job'
+    Properties:
+      Command:
+        Name: glueetl
+        PythonVersion: 3
+        ScriptLocation: 's3://all-python-scripts/week3/csv_to_parque_gluejob.py'
+      Description: Glue Job To Process CSV Files
+      GlueVersion: 2.0
+      Name: GlueJobForCSVFiles
+      Role: !GetAtt RoleForGlueJobCrawler.Arn
+      Timeout: 2
+      MaxRetries: 0
+      
+  DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "Media_Type"
+          AttributeType: "S"
+        - AttributeName: "File_Size_Limit"
+          AttributeType: "N"
+      KeySchema:
+        - AttributeName: "Media_Type"
+          KeyType: "HASH"
+        - AttributeName: "File_Size_Limit"
+          KeyType: "RANGE"
+      TableName: "FileSpecification_To_Gluejob_Mapping"
+      #BillingMode: PROVISIONED/ PAY_PER_REQUEST
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  SNSTopicForGlueJobFailureEmail:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: GlueJobFailureEmailNotification
+      Subscription:
+        - Endpoint: mayurahirave594@gmail.com
+          Protocol: email
+          
+  DatabaseForCrawler:
+    Type: 'AWS::Glue::Database'
+    Properties:
+      CatalogId: !Ref 'AWS::AccountId'
+      DatabaseInput:
+        Name: db-for-crawler
+        
+  GlueCrawler:
+    Type: 'AWS::Glue::Crawler'
+    Properties:
+      DatabaseName: !Ref DatabaseForCrawler
+      Description: crawler for output-folder
+      Name: myCrawler
+      Role: !GetAtt RoleForGlueJobCrawler.Arn
+      Targets:
+        S3Targets:
+          - Path: !Sub 
+              - 's3://${BucketName}/'
+              - BucketName: !Ref outputS3Bucket
+              
+  athenaResultS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: athena-query-results-buckett
