@@ -28,7 +28,7 @@ class Table:
                 return True
             print("Crawler Failed ", crawl['ErrorMessage'])
         except Exception as e:
-            print("Error in Table.create_table():\n", e)
+            print("Error in Table.create_table():\n", str(e))
         return False
 
     def get_table_name(self, glue):
@@ -48,7 +48,7 @@ class Table:
                 return True
             print("Crawler failed to create table for inputFile")
         except Exception as e:
-            print("Error in Table.get_table_name():\n", e)
+            print("Error in Table.get_table_name():\n", str(e))
         return False
 
     def run_query(self, athena, query_result_bucket='s3://athena-query-results-buckett/'):
@@ -64,7 +64,7 @@ class Table:
                 return True
             print("Query Failed. Reason: ", status['StateChangeReason'])
         except Exception as e:
-            print("Error in Table.run_query():\n", e)
+            print("Error in Table.run_query():\n", str(e))
         return False
 
 
@@ -84,7 +84,7 @@ class S3Object:
             raise Exception("Error in S3Object.__init__():\n" + str(e))
 
     def get_glue_job(self):
-        query_result = S3Object.table.query(Select="SPECIFIC_ATTRIBUTES", AttributesToGet=["Gluejob_Name"], Limit=1, ConsistentRead=True,
+        query_result = S3Object.table.query(Select="SPECIFIC_ATTRIBUTES", AttributesToGet=["Gluejob_Name"], Limit=1,
                                             KeyConditions={
                                                 'Media_Type': {'AttributeValueList': [self.type],
                                                                'ComparisonOperator': 'EQ'},
@@ -106,7 +106,7 @@ class S3Object:
                                                        RunId=job_run_id)
             return job_run_details
         except Exception as e:
-            print("Error in S3Object.run_glue_job():\n ", e)
+            print("Error in S3Object.run_glue_job():\n ", str(e))
             return {'JobRunState': 'Failed'}
 
     def glue_job_success(self):
@@ -118,7 +118,7 @@ class S3Object:
                 if table.run_query(boto3.client("athena")):
                     return True
         except Exception as e:
-            print("Error in S3Object.glue_job_success():\n", e)
+            print("Error in S3Object.glue_job_success():\n", str(e))
         return False
 
     def send_failure_alert(self, error_details, job_name):
@@ -131,7 +131,7 @@ class S3Object:
             sns.publish(TopicArn=topic_arn, Message=message, Subject='File conversion failed')
             return True
         except Exception as e:
-            print("Error in S3Object.send_failure_alert():\n", e)
+            print("Error in S3Object.send_failure_alert():\n", str(e))
             return False
 
 
