@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: A template to create IAM user with required S3 Access for Week 2 task
+ 
+Resources:
+  IAMUser:
+    Type: AWS::IAM::User
+    Properties: 
+      UserName: S3AutomationUser
+      
+  CustomS3Policy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:ListAllMyBuckets'
+              - 's3:CreateBucket'
+              - 's3:PutObject'
+              - 's3:PutObjectTagging'
+              - 's3:ListBucket'
+              - 's3:GetObject'
+              - 's3:GetObjectTagging'
+              - 's3:DeleteObject'
+            Resource: '*'
+      PolicyName: CustomS3PolicyForWk2
+      Users: 
+        - !Ref IAMUser
