@@ -2,9 +2,34 @@ AWSTemplateFormatVersion: '2010-09-09'
 
 Description: A template for event based trigger on S3 using Lmabda
 
-Resources:
+Parameters:
+  SourceBucketName:
+    Type: String
+    Default: primary-s3bucket1
+   
+  DestinationBucketName:
+    Type: String
+    Default: backup-s3buckett1
+  
+  ScriptBucketName:
+    Type: String
+    Default: all-python-scripts
+    
+  ScriptFileName:
+    Type: String
+    Default: lambda_function2.zip
+    
+  LambdaHandlerFile:
+    Type: String
+    Default: lambda_function2
+    Description: Name of handler file without extension.
+  
+  LambdaHandlerFunction:
+    Type: String
+    Default: lambda_handler
 
-  CreateS3FullAccessRole:
+Resources:
+  LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:     
       AssumeRolePolicyDocument: 
@@ -16,44 +41,65 @@ Resources:
             - lambda.amazonaws.com
           Action: 
           - sts:AssumeRole
-      Description : The IAM Role which has full access to s3 buckets
-      RoleName : S3FullAccessRole
-      ManagedPolicyArns: 
-      - arn:aws:iam::aws:policy/AmazonS3FullAccess
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
- 
-  CreateLambdaFunction:
+      Description : The IAM Role created for week1 task.
+      RoleName : Wk1LambdaExecutionRole
+      ManagedPolicyArns:
+      - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+
+  PolicyForS3GetPutObjAccess:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: !Sub 
+              - 'arn:aws:s3:::${BucketName}/*' 
+              - BucketName: !Ref SourceBucketName
+          - Effect: Allow
+            Action:
+              - 's3:PutObject'
+            Resource: !Sub 
+              - 'arn:aws:s3:::${BucketName}/*' 
+              - BucketName: !Ref DestinationBucketName
+      PolicyName: S3GetPutObjAccessPolicy
+      Roles: 
+        - !Ref LambdaExecutionRole
+           
+  LambdaFunction:
     Type: AWS::Lambda::Function
     Properties: 
       FunctionName: s3trigger-lambda-function
       Code:
-        S3Bucket: all-python-scripts
-        S3Key: lambda_function2.zip
-      Description: This Function is called whenever an object lands on s3, to copy the object to another bucket
-      Handler: lambda_function2.lambda_handler
-      Role: !GetAtt CreateS3FullAccessRole.Arn
+        S3Bucket: !Ref ScriptBucketName
+        S3Key: !Ref ScriptFileName
+      Description: This Function is called whenever an object lands in s3 bucket, to copy it to another bucket
+      Handler: !Join [ ".", [ !Ref LambdaHandlerFile, !Ref LambdaHandlerFunction]]
+      Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: python3.9
       
-  primaryS3bucket:
+  PrimaryS3bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: primary-s3bucket1
+      BucketName: !Ref SourceBucketName
       NotificationConfiguration:
         LambdaConfigurations: 
         - Event: s3:ObjectCreated:*
-          Function: !GetAtt CreateLambdaFunction.Arn
+          Function: !GetAtt LambdaFunction.Arn
           
-  backupS3bucket:
+  BackupS3bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: backup-s3buckett1
+      BucketName: !Ref DestinationBucketName
       
   AllowS3ToCallLambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction  
-      FunctionName: !GetAtt CreateLambdaFunction.Arn
+      FunctionName: !GetAtt LambdaFunction.Arn
       Principal: s3.amazonaws.com
       SourceArn: !Sub 
-        - 'arn:aws:s3:::${primaryS3bucketName}'
-        - primaryS3bucketName: primary-s3bucket1
+        - 'arn:aws:s3:::${BucketName}'
+        - BucketName: !Ref SourceBucketName
